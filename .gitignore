@@ -1,0 +1,9 @@
+node_modules/
+.env
+results.json
+data/*.generated.json
+data/*.download.txt
+logs/
+*.log
+coverage/
+

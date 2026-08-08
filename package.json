@@ -1,0 +1,22 @@
+{
+  "name": "style-graph-benchmark",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reproducible, cross-platform managed graph database benchmark suite",
+  "type": "commonjs",
+  "scripts": {
+    "benchmark": "node src/orchestrator.js",
+    "dataset": "node src/dataset/loader.js",
+    "lint": "node --check src/orchestrator.js && node --check src/metrics.js && node --check src/dataset/loader.js && node --check src/platforms/base-cypher.js && node --check src/platforms/cognodb.js && node --check src/platforms/neo4j.js && node --check src/platforms/memgraph.js && node --check src/platforms/arangodb.js && node --check src/platforms/neptune.js"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "dependencies": {
+    "arangojs": "^10.1.2",
+    "cli-table3": "^0.6.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.2.1",
+    "neo4j-driver": "^5.28.1"
+  }
+}

@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Style Graph Benchmark Dashboard</title>
+<meta name="description" content="Live graph database benchmark suite — CognoDB, Neo4j AuraDB, Memgraph, ArangoDB" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+
+<style>
+  /* ============================================================
+     DESIGN TOKENS
+     ============================================================ */
+  :root {
+    --bg-0: #05070d;
+    --bg-1: #0a0f1a;
+    --bg-2: #0f1524;
+    --surface: rgba(255, 255, 255, 0.045);
+    --surface-strong: rgba(255, 255, 255, 0.07);
+    --border: rgba(255, 255, 255, 0.09);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --text-0: #eef1f8;
+    --text-1: #aab3c5;
+    --text-2: #6b7690;
+
+    --accent: #6c8dff;
+    --accent-2: #22d3ee;
+    --success: #34d399;
+    --danger: #f87171;
+    --warning: #fbbf24;
+
+    --cognodb: #a78bfa;
+    --neo4j: #4c8dff;
+    --memgraph: #ff7a59;
+    --arangodb: #34d399;
+
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 9px;
+    --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.4);
+    --shadow-lift: 0 24px 60px rgba(0, 0, 0, 0.5);
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg-0);
+    color: var(--text-0);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background glow — pure CSS, no image assets needed */
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    width: 60vw;
+    height: 60vw;
+    max-width: 900px;
+    max-height: 900px;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.16;
+    z-index: -1;
+    animation: drift 24s ease-in-out infinite alternate;
+  }
+  body::before {
+    background: radial-gradient(circle, var(--accent), transparent 70%);
+    top: -20%;
+    left: -10%;
+  }
+  body::after {
+    background: radial-gradient(circle, var(--accent-2), transparent 70%);
+    bottom: -25%;
+    right: -10%;
+    animation-delay: -12s;
+  }
+  @keyframes drift {
+    0%   { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(4%, 6%) scale(1.08); }
+  }
+
+  ::selection { background: var(--accent); color: #fff; }
+
+  a { color: var(--accent-2); }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+  button:focus-visible,
+  input:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 2px;
+  }
+
+  .wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+
+  /* ============================================================
+     HERO
+     ============================================================ */
+  .hero {
+    padding: 72px 0 48px;
+    text-align: center;
+  }
+  .hero__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--accent-2);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 22px;
+  }
+  .hero__eyebrow .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.6);
+    animation: pulse-dot 1.8s ease-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%   { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.55); }
+    70%  { box-shadow: 0 0 0 9px rgba(34, 211, 238, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+  }
+
+  .hero h1 {
+    font-size: clamp(2.1rem, 4.6vw, 3.6rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 0 0 14px;
+    background: linear-gradient(135deg, #ffffff 20%, var(--accent-2) 65%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p.subtitle {
+    font-size: clamp(1rem, 1.6vw, 1.2rem);
+    color: var(--text-1);
+    max-width: 620px;
+    margin: 0 auto 30px;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 0.92rem;
+    transition: border-color 0.3s var(--ease), background 0.3s var(--ease);
+  }
+  .status-badge .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--text-2);
+    transition: background 0.3s var(--ease);
+  }
+  .status-badge.status--idle .dot { background: var(--text-2); }
+  .status-badge.status--running {
+    border-color: rgba(52, 211, 153, 0.4);
+    background: rgba(52, 211, 153, 0.08);
+  }
+  .status-badge.status--running .dot {
+    background: var(--success);
+    animation: pulse-dot 1.4s ease-out infinite;
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
+  }
+  .status-badge.status--completed {
+    border-color: rgba(108, 141, 255, 0.4);
+    background: rgba(108, 141, 255, 0.08);
+  }
+  .status-badge.status--completed .dot { background: var(--accent); }
+  .status-badge.status--stopped {
+    border-color: rgba(248, 113, 113, 0.4);
+    background: rgba(248, 113, 113, 0.08);
+  }
+  .status-badge.status--stopped .dot { background: var(--danger); }
+
+  /* ============================================================
+     SHARED SECTION / CARD PRIMITIVES
+     ============================================================ */
+  .section { padding: 46px 0; }
+  .section-header { margin-bottom: 28px; text-align: center; }
+  .section-header h2 {
+    font-size: clamp(1.5rem, 2.4vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+  }
+  .section-header p {
+    color: var(--text-1);
+    margin: 0;
+    font-size: 0.98rem;
+  }
+
+  .glass {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: var(--shadow-soft);
+  }
+
+  /* ============================================================
+     PLATFORM CARDS
+     ============================================================ */
+  .platform-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 22px;
+  }
+
+  .platform-card {
+    position: relative;
+    padding: 26px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease), border-color 0.35s var(--ease);
+    animation: card-in 0.6s var(--ease) both;
+  }
+  .platform-grid .platform-card:nth-child(1) { animation-delay: 0.02s; }
+  .platform-grid .platform-card:nth-child(2) { animation-delay: 0.1s; }
+  .platform-grid .platform-card:nth-child(3) { animation-delay: 0.18s; }
+  .platform-grid .platform-card:nth-child(4) { animation-delay: 0.26s; }
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .platform-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-lg);
+    padding: 1px;
+    background: linear-gradient(135deg, var(--accent), transparent 40%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.35s var(--ease);
+    pointer-events: none;
+  }
+  .platform-card:hover {
+    transform: translateY(-7px);
+    box-shadow: var(--shadow-lift);
+    border-color: var(--border-strong);
+  }
+  .platform-card:hover::before { opacity: 1; }
+
+  .platform-card__badge {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: #05070d;
+    background: var(--accent);
+  }
+
+  .platform-card h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .platform-card__section { margin: 0; }
+  .platform-card__section h4 {
+    margin: 0 0 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .platform-card__section p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-1);
+  }
+
+  .btn {
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    font-weight: 600;
+    font-size: 0.92rem;
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), opacity 0.2s var(--ease);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:active:not(:disabled) { transform: scale(0.97); }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .btn-run {
+    margin-top: auto;
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #05070d;
+  }
+  .btn-run:hover:not(:disabled) { box-shadow: 0 10px 26px -6px rgba(108, 141, 255, 0.55); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #05070d;
+  }
+  .btn-primary:hover:not(:disabled) { box-shadow: 0 10px 26px -6px rgba(108, 141, 255, 0.55); }
+
+  .btn-danger {
+    background: rgba(248, 113, 113, 0.14);
+    color: #fca5a5;
+    border: 1px solid rgba(248, 113, 113, 0.35);
+  }
+  .btn-danger:hover:not(:disabled) { background: rgba(248, 113, 113, 0.22); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-1);
+    border: 1px solid var(--border);
+  }
+
+  /* ============================================================
+     COMPARE SECTION
+     ============================================================ */
+  .compare-card {
+    padding: 30px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 16px 10px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-1);
+    cursor: pointer;
+    transition: all 0.25s var(--ease);
+  }
+  .chip input { position: absolute; opacity: 0; pointer-events: none; }
+  .chip__swatch {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .chip input:checked ~ span.chip__label {
+    color: var(--text-0);
+  }
+  .chip:has(input:checked) {
+    border-color: var(--border-strong);
+    background: var(--surface-strong);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.88rem;
+    color: var(--text-1);
+  }
+  .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+  .compare-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* ============================================================
+     RESULTS SUMMARY
+     ============================================================ */
+  .empty-state {
+    text-align: center;
+    color: var(--text-2);
+    font-size: 0.94rem;
+    padding: 30px 20px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 18px;
+  }
+  .summary-card {
+    padding: 20px 20px 18px;
+  }
+  .summary-card h3 {
+    margin: 0 0 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-0);
+  }
+  .summary-card__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .summary-card__list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.86rem;
+    color: var(--text-1);
+  }
+  .summary-card__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .summary-card__platform { flex: 1; }
+  .summary-card__value {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--text-0);
+    font-weight: 600;
+  }
+  .summary-card__badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(52, 211, 153, 0.16);
+    color: var(--success);
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+  .summary-card__empty {
+    margin: 0;
+    font-size: 0.84rem;
+    color: var(--text-2);
+    font-style: italic;
+  }
+
+  /* ============================================================
+     CHARTS
+     ============================================================ */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 20px;
+  }
+  .chart-card { padding: 22px 22px 16px; }
+  .chart-card h3 {
+    margin: 0 0 14px;
+    font-size: 0.98rem;
+    font-weight: 700;
+  }
+  .chart-canvas-wrap { position: relative; height: 280px; }
+
+  /* ============================================================
+     TERMINAL
+     ============================================================ */
+  .terminal-card {
+    padding: 0;
+    overflow: hidden;
+  }
+  .terminal-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--border);
+  }
+  .terminal-titlebar__left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .terminal-dots { display: flex; gap: 7px; }
+  .terminal-dots span {
+    width: 11px; height: 11px; border-radius: 50%;
+  }
+  .terminal-dots span:nth-child(1) { background: #ff5f57; }
+  .terminal-dots span:nth-child(2) { background: #febc2e; }
+  .terminal-dots span:nth-child(3) { background: #28c840; }
+  .terminal-titlebar__name {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.82rem;
+    color: var(--text-1);
+  }
+  #terminal-status {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.78rem;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-1);
+  }
+  #terminal-status[data-state="running"] { color: var(--success); background: rgba(52, 211, 153, 0.1); }
+  #terminal-status[data-state="finished"] { color: var(--accent-2); background: rgba(34, 211, 238, 0.1); }
+  #terminal-status[data-state="stopped"] { color: var(--danger); background: rgba(248, 113, 113, 0.1); }
+
+  #terminal-output {
+    background: #04070c;
+    color: #39ff6a;
+    font-size: 0.84rem;
+    line-height: 1.55;
+    padding: 20px 22px;
+    height: 460px;
+    overflow-y: auto;
+    tab-size: 4;
+  }
+  #terminal-output .terminal-line--stdout { color: #48f57b; }
+  #terminal-output .terminal-line--stderr { color: #ff6b6b; }
+  #terminal-output .terminal-line--success { color: #22d3ee; font-weight: 700; }
+  #terminal-output::-webkit-scrollbar { width: 10px; }
+  #terminal-output::-webkit-scrollbar-track { background: transparent; }
+  #terminal-output::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+  }
+
+  /* ============================================================
+     TOASTS
+     ============================================================ */
+  #toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 340px;
+  }
+  .toast {
+    padding: 13px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.86rem;
+    font-weight: 500;
+    color: var(--text-0);
+    background: var(--bg-2);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-soft);
+    opacity: 0;
+    transform: translateX(16px);
+    transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+  }
+  .toast--visible { opacity: 1; transform: translateX(0); }
+  .toast--error { border-left: 3px solid var(--danger); }
+  .toast--success { border-left: 3px solid var(--success); }
+  .toast--info { border-left: 3px solid var(--accent-2); }
+
+  footer {
+    text-align: center;
+    padding: 40px 20px 60px;
+    color: var(--text-2);
+    font-size: 0.82rem;
+  }
+
+  @media (max-width: 640px) {
+    .hero { padding: 52px 0 34px; }
+    .section { padding: 34px 0; }
+    #terminal-output { height: 360px; }
+  }
+</style>
+</head>
+<body>
+
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- ============================================================
+       HERO
+       ============================================================ -->
+  <header class="hero wrap">
+    <span class="hero__eyebrow"><span class="live-dot"></span> Live Graph Database Benchmark Suite</span>
+    <h1>Style Graph Benchmark Dashboard</h1>
+    <p class="subtitle">
+      Watch CognoDB, Neo4j AuraDB, Memgraph, and ArangoDB compete head-to-head on ingestion,
+      traversal, lookup, aggregation, and mixed workloads — streamed live from the actual CLI run.
+    </p>
+    <div id="status-badge" class="status-badge status--idle" role="status" aria-live="polite">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">Idle</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- ============================================================
+         PLATFORM CARDS
+         ============================================================ -->
+    <section class="section" aria-labelledby="platforms-heading">
+      <div class="section-header">
+        <h2 id="platforms-heading">Platforms Under Test</h2>
+        <p>Run any platform individually against the shared dataset and query mix.</p>
+      </div>
+
+      <div class="platform-grid">
+
+        <article class="platform-card glass" style="--accent: var(--cognodb);">
+          <div class="platform-card__badge">Cg</div>
+          <h3>CognoDB</h3>
+          <div class="platform-card__section">
+            <h4>Architecture</h4>
+            <p>Managed cloud graph database exposed over the Bolt protocol with Cypher query support, deployed as a single elastically-scaled cluster instance.</p>
+          </div>
+          <div class="platform-card__section">
+            <h4>Advantages</h4>
+            <p>Zero infrastructure management, Cypher compatibility for fast onboarding, and encrypted Bolt+TLS connections by default.</p>
+          </div>
+          <div class="platform-card__section">
+            <h4>Use Cases</h4>
+            <p>Teams that want a fully managed graph backend without operating database infrastructure themselves.</p>
+          </div>
+          <button class="btn btn-run run-btn" data-platform="cognodb" aria-label="Run CognoDB benchmark">▶ Run Benchmark</button>
+        </article>
+
+        <article class="platform-card glass" style="--accent: var(--neo4j);">
+          <div class="platform-card__badge">N4</div>
+          <h3>Neo4j AuraDB</h3>
+          <div class="platform-card__section">
+            <h4>Architecture</h4>
+            <p>Native property-graph storage engine with index-free adjacency, queried via Cypher over an encrypted Bolt connection, fully managed as AuraDB.</p>
+          </div>
+          <div class="platform-card__section">
+            <h4>Advantages</h4>
+            <p>Mature ecosystem and tooling, ACID-compliant transactions, and storage purpose-built for deep multi-hop traversals.</p>
+          </div>
+          <div class="platform-card__section">
+            <h4>Use Cases</h4>
+            <p>Fraud detection, knowledge graphs, recommendation engines, and identity/access graphs.</p>
+          </div>
+          <button class="btn btn-run run-btn" data-platform="neo4j" aria-label="Run Neo4j AuraDB benchmark">▶ Run Benchmark</button>
+        </article>
+
+        <article class="platform-card glass" style="--accent: var(--memgraph);">
+          <div class="platform-card__badge">Mg</div>
+          <h3>Memgraph</h3>
+          <div class="platform-card__section">
+            <h4>Architecture</h4>
+            <p>In-memory, C++ built graph engine with Cypher compatibility and native support for streaming ingestion pipelines.</p>
+          </div>
+          <div class="platform-card__section">
+            <h4>Advantages</h4>
+            <p>Very low query latency from in-memory storage, real-time graph updates, and lightweight resource footprint.</p>
+          </div>
+          <div class="platform-card__section">
+            <h4>Use Cases</h4>
+            <p>Real-time fraud detection, dynamic network monitoring, and workloads needing sub-millisecond reads.</p>
+          </div>
+          <button class="btn btn-run run-btn" data-platform="memgraph" aria-label="Run Memgraph benchmark">▶ Run Benchmark</button>
+        </article>
+
+        <article class="platform-card glass" style="--accent: var(--arangodb);">
+          <div class="platform-card__badge">Ar</div>
+          <h3>ArangoDB</h3>
+          <div class="platform-card__section">
+            <h4>Architecture</h4>
+            <p>Multi-model engine unifying graph, document, and key-value data, queried through AQL over an HTTP REST API.</p>
+          </div>
+          <div class="platform-card__section">
+            <h4>Advantages</h4>
+            <p>One database for graph and document workloads, horizontal scale-out via clustering, and a single flexible query language.</p>
+          </div>
+          <div class="platform-card__section">
+            <h4>Use Cases</h4>
+            <p>Content platforms, IoT graphs, and applications blending relational, document, and graph data.</p>
+          </div>
+          <button class="btn btn-run run-btn" data-platform="arangodb" aria-label="Run ArangoDB benchmark">▶ Run Benchmark</button>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ============================================================
+         COMPARE PLATFORMS
+         ============================================================ -->
+    <section class="section" aria-labelledby="compare-heading">
+      <div class="section-header">
+        <h2 id="compare-heading">Compare Platforms</h2>
+        <p>Select any combination of platforms to benchmark head-to-head in a single run.</p>
+      </div>
+
+      <div class="compare-card glass">
+        <div class="chip-row">
+          <label class="chip" style="--accent: var(--cognodb);">
+            <input type="checkbox" class="compare-checkbox" value="cognodb" checked />
+            <span class="chip__swatch"></span>
+            <span class="chip__label">CognoDB</span>
+          </label>
+          <label class="chip" style="--accent: var(--neo4j);">
+            <input type="checkbox" class="compare-checkbox" value="neo4j" checked />
+            <span class="chip__swatch"></span>
+            <span class="chip__label">Neo4j AuraDB</span>
+          </label>
+          <label class="chip" style="--accent: var(--memgraph);">
+            <input type="checkbox" class="compare-checkbox" value="memgraph" checked />
+            <span class="chip__swatch"></span>
+            <span class="chip__label">Memgraph</span>
+          </label>
+          <label class="chip" style="--accent: var(--arangodb);">
+            <input type="checkbox" class="compare-checkbox" value="arangodb" checked />
+            <span class="chip__swatch"></span>
+            <span class="chip__label">ArangoDB</span>
+          </label>
+        </div>
+
+        <label class="toggle-row">
+          <input type="checkbox" id="reset-toggle" />
+          Reset database before this run (recreates benchmark data instead of measuring reads only)
+        </label>
+
+        <div class="compare-actions">
+          <button id="run-comparison-btn" class="btn btn-primary">▶ Run Comparison</button>
+          <button id="stop-btn" class="btn btn-danger" disabled>■ Stop Benchmark</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         RESULTS SUMMARY
+         ============================================================ -->
+    <section class="section" aria-labelledby="results-heading">
+      <div class="section-header">
+        <h2 id="results-heading">Benchmark Results</h2>
+        <p>Pulled automatically from results.json the moment a run finishes.</p>
+      </div>
+
+      <p id="results-empty-state" class="empty-state">
+        No results yet. Run a benchmark above to see live metrics and charts appear here.
+      </p>
+      <div id="results-summary-grid" class="summary-grid" hidden></div>
+    </section>
+
+    <!-- ============================================================
+         CHARTS
+         ============================================================ -->
+    <section id="charts-section" class="section" aria-labelledby="charts-heading" hidden>
+      <div class="section-header">
+        <h2 id="charts-heading">Visual Comparison</h2>
+        <p>Grouped throughput and latency comparisons across every platform tested.</p>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card glass">
+          <h3>QPS Comparison — Mixed Workload</h3>
+          <div class="chart-canvas-wrap"><canvas id="chart-qps"></canvas></div>
+        </div>
+        <div class="chart-card glass">
+          <h3>Latency Comparison — All Query Types</h3>
+          <div class="chart-canvas-wrap"><canvas id="chart-latency"></canvas></div>
+        </div>
+        <div class="chart-card glass">
+          <h3>Traversal Comparison</h3>
+          <div class="chart-canvas-wrap"><canvas id="chart-traversal"></canvas></div>
+        </div>
+        <div class="chart-card glass">
+          <h3>Lookup Comparison</h3>
+          <div class="chart-canvas-wrap"><canvas id="chart-lookup"></canvas></div>
+        </div>
+        <div class="chart-card glass">
+          <h3>Aggregation Comparison</h3>
+          <div class="chart-canvas-wrap"><canvas id="chart-aggregation"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         LIVE TERMINAL
+         ============================================================ -->
+    <section class="section" aria-labelledby="terminal-heading">
+      <div class="section-header">
+        <h2 id="terminal-heading">Live Terminal</h2>
+        <p>Exactly what the CLI prints — same whitespace, same Unicode table borders, streamed live.</p>
+      </div>
+
+      <div class="terminal-card glass">
+        <div class="terminal-titlebar">
+          <div class="terminal-titlebar__left">
+            <div class="terminal-dots"><span></span><span></span><span></span></div>
+            <span class="terminal-titlebar__name">npm run benchmark</span>
+          </div>
+          <span id="terminal-status" data-state="idle">Connecting…</span>
+        </div>
+        <div id="terminal-output" role="log" aria-live="polite"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>Style Graph Benchmark Dashboard · a thin control plane over the existing benchmark suite</footer>
+
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

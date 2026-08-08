@@ -1,0 +1,5 @@
+{
+  "description": "Tiny offline fixture only. The benchmark loader automatically downloads SNAP soc-Epinions1 and deterministically samples it to DATASET_EDGE_LIMIT (default 150,000).",
+  "nodes": [{"id":"1","category":"0"},{"id":"2","category":"1"},{"id":"3","category":"0"}],
+  "edges": [{"source":"1","target":"2"},{"source":"2","target":"3"},{"source":"3","target":"1"}]
+}
