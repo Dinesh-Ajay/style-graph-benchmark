@@ -2,6 +2,10 @@
 
 A reproducible graph-database benchmarking and technology-evangelism dashboard for comparing **CognoDB Cloud, Neo4j AuraDB, Memgraph Cloud, and ArangoDB** using a common dataset and benchmark workload.
 
+## Live Demo
+
+🚀 **Live Application:** https://style-graph-benchmark.onrender.com/
+
 The project has two layers:
 
 - **Benchmark engine** — the existing CLI benchmark that performs the real database measurements.
